@@ -1,0 +1,13 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      # The database is produced by the vn-it-job-market pipeline and only read
+      # here, so it is mounted read-only.
+      - ./data/jobs.db:/data/jobs.db:ro
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Database__Path: /data/jobs.db
+    restart: unless-stopped

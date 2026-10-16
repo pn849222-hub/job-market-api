@@ -1,0 +1,7 @@
+bin/
+obj/
+.vs/
+*.user
+
+# Built locally by tools/seed-demo-db.py, or copied from the analysis pipeline.
+data/*.db
