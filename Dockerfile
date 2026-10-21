@@ -9,6 +9,13 @@ RUN dotnet restore src/JobMarketApi/JobMarketApi.csproj
 COPY src/ src/
 RUN dotnet publish src/JobMarketApi/JobMarketApi.csproj -c Release -o /app/publish --no-restore
 
+# Generate the synthetic demo database, so the image runs on a host with nothing
+# to mount. The real postings never enter the image.
+FROM python:3.12-slim AS seed
+WORKDIR /seed
+COPY tools/seed-demo-db.py tools/
+RUN python tools/seed-demo-db.py
+
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
@@ -17,6 +24,8 @@ RUN useradd --uid 1001 --create-home --shell /usr/sbin/nologin api
 USER api
 
 COPY --from=build /app/publish .
+# A file mounted at the same path (docker-compose.yml) takes its place.
+COPY --from=seed /seed/data/jobs.db /data/jobs.db
 
 ENV ASPNETCORE_URLS=http://+:8080 \
     Database__Path=/data/jobs.db

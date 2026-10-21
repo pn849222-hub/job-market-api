@@ -19,12 +19,17 @@ dotnet run --project src/JobMarketApi
 
 Then open <http://localhost:5000/swagger>.
 
-Or with Docker:
+Or with Docker. The image generates its own synthetic database while it builds,
+so it runs with nothing mounted:
 
 ```bash
-python3 tools/seed-demo-db.py
-docker compose up --build          # http://localhost:8080/swagger
+docker build -t job-market-api .
+docker run --rm -p 8080:8080 job-market-api    # http://localhost:8080/swagger
 ```
+
+`docker compose up --build` mounts `data/jobs.db` over the built-in one, so seed
+it first (or copy in the pipeline's output). On hosts that set `PORT`, such as
+Render, the API listens on that port instead of 8080.
 
 To serve the real dataset instead, run the pipeline in the companion repo and
 point `Database__Path` at its `data/processed/jobs.db`.
