@@ -11,8 +11,15 @@ if (args.Contains("--healthcheck"))
 
 var builder = WebApplication.CreateBuilder(args);
 
-// The database is built by the companion Python pipeline (vn-it-job-market) and
-// mounted read-only, so the API never writes to it.
+// Hosts such as Render say which port to listen on through PORT. Without it,
+// ASPNETCORE_URLS applies (port 8080 in the Docker image).
+if (Environment.GetEnvironmentVariable("PORT") is { Length: > 0 } hostPort)
+{
+    builder.WebHost.UseUrls($"http://+:{hostPort}");
+}
+
+// The database is built by the companion Python pipeline (vn-it-job-market), or
+// by the demo seed script inside the Docker image, and the API never writes to it.
 var databasePath = builder.Configuration["Database:Path"]
                    ?? Path.Combine(AppContext.BaseDirectory, "data", "jobs.db");
 var connectionString = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
@@ -104,8 +111,9 @@ internal static class HealthProbe
 {
     public static async Task<int> RunAsync()
     {
-        var port = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.Split(':').Last()
-                   ?? "8080";
+        var port = Environment.GetEnvironmentVariable("PORT") is { Length: > 0 } hostPort
+            ? hostPort
+            : Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.Split(':').Last() ?? "8080";
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
         try
         {
